@@ -1,0 +1,3 @@
+Image Processing Project - APMA 935
+Project created for a graduate level course in image processing. Two image inpainting algorithms are implemented- TV Regularization and the Bertalmio-Sapiro-Caselles-Ballester Algorithm. Both are run on several sample images, including both black and white and colour images. Inpainting regions include damaged regions in older photographs, and also specific objects such as text, cages, or even wrinkles. 
+ 

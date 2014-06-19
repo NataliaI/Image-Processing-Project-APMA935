@@ -1,0 +1,81 @@
+function[T, CPUtime]=BSCBInpaintColour(I, Mask, NSwitches,FigNum)
+%--------------------------------------------------------------------------
+% BSCBInpaint performs Bertalmio-Sapiro-Caselles-Ballester inpainting for
+% colour images
+% Alternates between diffusion and image inpainting process
+% Calls functions BSCBIter and TVIter for inpainting and diffusion
+% Inputs: 
+% I: matrix of image to be inpainted (MxNx3) 
+% Mask: binary mask of inpaining region
+% NSwitches: number of times to repeat inpainting and diffusion processes
+% FigNum: figure number for output (string)
+% Outputs: 
+% T: max time T (using default step size 0.1)
+% CPUtime: CPU time
+%--------------------------------------------------------------------------
+GetNorm=0;
+global dt
+Mask_val=1.3; % always s
+h=figure;
+set(h, 'Position', [100 100 2000 500])
+for k=1:3
+    ColourI=I(:,:,k);
+    ColourI(Mask==1)=Mask_val;
+    I(:,:,k)=ColourI;
+    subplot(1,3,k);
+    imagesc(I(:,:,k)); axis off; 
+end
+tightfig;
+
+saveas(gca, strcat('BSCBOutput2/',FigNum,'InitialImage.eps'),'epsc'); 
+
+A=15; % num iterations of inpainting
+B=2;  % num iterations of TV 
+tStart=tic;
+for k=1:3
+    disp(' ');
+    disp(['working on MxNx' num2str(k)]);
+    disp('-------------------');
+    t=0;
+    figure;
+    disp('Applying 10 iterations of TV to entire image');
+    lambda_val=100;
+    I(:,:,k)=TVIter(I(:,:,k), zeros(size(Mask)), 10,0,0,t,lambda_val);
+
+    % Starting Inpainting
+    %---------------------
+    t=0; 
+    for switches=1:NSwitches
+        if mod(switches, 10)==0
+            disp(['switch ' num2str(switches) ' of ' num2str(NSwitches)]);
+        end
+        % BSCB Inpainting
+        %-----------------
+        I(:,:,k)=BSCBIter(I(:,:,k),Mask,Mask_val, A,GetNorm,t);
+        t=t+dt*A;
+    
+        % TV Inpainting
+        %---------------
+        I(:,:,k)=TVIter(I(:,:,k),Mask,B,1,GetNorm,t);
+        t=t+dt*B;
+    end
+
+disp('Applying 10 iterations of TV to entire image');
+lambda_val=100;
+I(:,:,k)=TVIter(I(:,:,k), zeros(size(Mask)), 30,0,0,t,lambda_val);
+end
+
+figure;
+imagesc(I);
+title('Inpainted Image','FontSize',12)
+set(gca,'xtick',[],'ytick',[]);
+xlabel(['t= ' num2str(t)],'FontSize',12);
+saveas(gca, strcat('BSCBOutput2/',FigNum,'InpaintedImage.eps'),'epsc'); 
+   
+    
+% Displaying CPU Time
+%-----------------------
+T=t;                    %final time
+CPUtime=toc(tStart)/60;    %total CPU time
+disp(['Final time t= ' num2str(T)]);
+disp(['CPU time= ' num2str(CPUtime/60) 'mins']);
